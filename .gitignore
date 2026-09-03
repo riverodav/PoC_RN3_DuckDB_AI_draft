@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+
+# Generated per-country deliverables (regenerate locally with the prefill notebook)
+output/
+*.gpkg
+*.sqlite
+wise_rbdsuca.duckdb.wal
+
+# Local secrets (AI_EXPLAIN_PROVIDER credentials)
+.env

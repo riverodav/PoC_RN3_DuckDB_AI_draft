@@ -1,0 +1,7 @@
+duckdb>=1.5
+pandas
+geopandas
+ipywidgets
+ipyleaflet
+openai>=1.0
+python-dotenv>=1.0

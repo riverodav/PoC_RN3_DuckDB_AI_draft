@@ -1,0 +1,39 @@
+code,dataflow,table_name,error_level,description
+R003,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,endLifespanVersion must be later than beginLifespanVersion.
+R011,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Creation objects must not report predecessors.
+R014,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,predecessorsIdentifierScheme must be reported when predecessorsIdentifier is provided.
+R015,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Each predecessor identifier must match an existing thematic identifier.
+R016,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Deletion and noChange objects must not report predecessors.
+R022,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Change objects must report inspireIdVersionId.
+R026,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,changeCode and splitting objects must report exactly one predecessorsIdentifier.
+R027,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Predecessor identifiers must not be repeated within the same record.
+R028,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Objects with wiseEvolutionType creation or noChange must not report predecessors.
+R029,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,A successorsIdentifier must correspond to an existing thematicIdIdentifier in the submission.
+R032,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Splitting objects must not reference the same predecessor more than once.
+R035,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,All splitting or aggregation predecessors must share the same designationPeriodBegin.
+R039,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,thematicIdIdentifierScheme must not be reported without thematicIdIdentifier.
+R040,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,thematicIdIdentifier must not be reported without thematicIdIdentifierScheme.
+R045,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Objects with wiseEvolutionType other than creation/change/noChange must report predecessorsIdentifier.
+R046,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,A predecessor identifier must not appear more than once for the same record.
+RF004_WFD,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Reported RBDs that exist in the reference must not have wiseEvolutionType other than noChange or change (WFD reporters).
+RF008,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Predecessor identifiers must exist in the reference register.
+RF012_WFD,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,WARNING,designationPeriodBegin must match the value held in the reference data (WFD reporters).
+RF013_WFD,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,WARNING,designationPeriodBegin of changed RBDs must match the predecessor value in the reference (WFD reporters).
+RF014_WFD,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,WARNING,designationPeriodBegin of changeCode RBDs must match the predecessor value in the reference (WFD reporters).
+RF019_WFD,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,noChange and change RBDs must exist in the reference register (WFD reporters).
+RF021_WFD,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Reported RBD identifiers must not be superseded in the reference register (WFD reporters).
+S005,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,River Basin District geometries must use a supported spatial reference system (EPSG:4326/4258/3035).
+S006,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,River Basin District geometries must be simple (no self-intersections after MakeValid).
+S013,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,River Basin District geometries must be valid non-empty polygons.
+S016,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,River Basin Districts must not overlap each other by more than 625 m2.
+S017,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,River Basin Districts must not overlap each other (alternative geometry field variant).
+T002_WFD,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Every reference River Basin District must be reported again or declared as a predecessor (WFD reporters).
+T228,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Only one successorsIdentifier value may be reported per record.
+T229,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,Predecessor identifiers must reference thematic identifiers that exist in the same submission.
+T230,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,River Basin District spatial dimension must be consistent with the reported geometry.
+V005,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,thematicIdIdentifier must follow the country-prefixed alphanumeric code pattern.
+V025,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,nameTextInternational must contain only uppercase letters digits hyphens and spaces.
+V040,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,predecessorsIdentifier must follow the country-prefixed alphanumeric code pattern.
+V068,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,wiseEvolutionType must not be deletion.
+V073,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,predecessorsIdentifierScheme must be euRBDCode when reported.
+V076,RiverBasinDistrictsAndCompetentAuthorities,SPATIAL_RiverBasinDistrict,ERROR,thematicIdIdentifierScheme must be euRBDCode for WFD reporters.
