@@ -10,6 +10,7 @@ from __future__ import annotations
 import random
 import re
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 import duckdb
 import pandas as pd
@@ -41,18 +42,6 @@ def _sql_identifier(value: str) -> str:
     return str(value).replace('"', '""')
 
 
-COUNTRIES = [
-    ("Austria", "AT"), ("Belgium", "BE"), ("Bulgaria", "BG"), ("Croatia", "HR"),
-    ("Cyprus", "CY"), ("Czechia", "CZ"), ("Denmark", "DK"), ("Estonia", "EE"),
-    ("Finland", "FI"), ("France", "FR"), ("Germany", "DE"), ("Greece", "EL"),
-    ("Hungary", "HU"), ("Iceland", "IS"), ("Ireland", "IE"), ("Italy", "IT"),
-    ("Latvia", "LV"), ("Lithuania", "LT"), ("Luxembourg", "LU"), ("Malta", "MT"),
-    ("Netherlands", "NL"), ("Norway", "NO"), ("Poland", "PL"), ("Portugal", "PT"),
-    ("Romania", "RO"), ("Slovakia", "SK"), ("Slovenia", "SI"), ("Spain", "ES"),
-    ("Sweden", "SE"),
-]
-
-
 def connect(catalog_path: str | Path = DEFAULT_CATALOG) -> duckdb.DuckDBPyConnection:
     """Open the catalog and load the extensions the views depend on."""
     catalog_path = Path(catalog_path)
@@ -66,6 +55,22 @@ def connect(catalog_path: str | Path = DEFAULT_CATALOG) -> duckdb.DuckDBPyConnec
         con.execute(f"LOAD {extension}")
     set_parameters(con)
     return con
+
+
+def available_countries(output_dir: str | Path) -> list[tuple[str, str]]:
+    """Return the country codes for which a prefill output exists.
+
+    Each sub-directory inside ``output_dir`` whose name is a two-letter ISO-style
+    country code is treated as an available country. The label shown in the
+    selector is the upper-case code; add human-readable names if you prefer.
+    """
+    output_dir = Path(output_dir)
+    codes = sorted(
+        p.name.upper()
+        for p in output_dir.iterdir()
+        if p.is_dir() and _COUNTRY_CODE_RE.match(p.name)
+    )
+    return [(code, code) for code in codes]
 
 
 def set_parameters(
@@ -86,13 +91,16 @@ def set_parameters(
 
 
 def current_parameters(con: duckdb.DuckDBPyConnection) -> dict[str, str]:
-    return con.sql(
-        """
-        SELECT getvariable('country_code') AS country_code,
-               getvariable('cycle_year') AS cycle_year,
-               getvariable('reference_cycle_year') AS reference_cycle_year
-        """
-    ).df().iloc[0].to_dict()
+    return {
+        str(k): str(v)
+        for k, v in con.sql(
+            """
+            SELECT getvariable('country_code') AS country_code,
+                   getvariable('cycle_year') AS cycle_year,
+                   getvariable('reference_cycle_year') AS reference_cycle_year
+            """
+        ).df().iloc[0].items()
+    }
 
 
 def list_datasets(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
@@ -262,16 +270,22 @@ def build_sandbox(
     return sandbox_path
 
 
+class _FaultSpec(TypedDict):
+    qcs: list[str]
+    description: str
+    replace: NotRequired[str]  # every fault except overlapping_geometry provides a REPLACE clause
+
+
 # One entry per injectable defect: which QC(s) it is realistically expected to make
 # fail (verified against each QC's SQL, not just the QC it primarily targets - e.g.
 # breaking thematicIdIdentifier also breaks the reference QCs that join on it), a short
 # explanation, and the REPLACE clause applied to the first (by thematicIdIdentifier)
 # RiverBasinDistrict record. "overlapping_geometry" is special-cased in inject_fault()
 # because it adds a row instead of replacing a field.
-FAULT_LIBRARY: dict[str, dict[str, object]] = {
+FAULT_LIBRARY: dict[str, _FaultSpec] = {
     "overlapping_geometry": {
         "qcs": ["S016"],
-        "description": "duplicates the first RBD polygon under a new, well-formed code, so the two overlap",
+        "description": "duplicates the first RBD polygon under a new valid code, so the two overlap",
     },
     "designation_date_mismatch": {
         "qcs": ["RF012_WFD"],
@@ -281,7 +295,7 @@ FAULT_LIBRARY: dict[str, dict[str, object]] = {
     "invalid_identifier_pattern": {
         "qcs": ["V005", "RF019_WFD", "T002_WFD"],
         "description": (
-            "gives thematicIdIdentifier a value that breaks the country-prefixed code pattern; "
+            "gives thematicIdIdentifier a value that breaks the country prefix code pattern; "
             "since the reported record no longer matches its reference entry, this also makes it "
             "look unreported (RF019_WFD) and its original reference RBD look dropped (T002_WFD)"
         ),
@@ -341,9 +355,11 @@ def inject_fault(
             FROM numbered WHERE rn = 1
         """
     else:
+        replace_clause = spec.get("replace")
+        assert replace_clause is not None, f"fault {fault} is missing a REPLACE clause"
         select_sql = f"""
             {numbered}
-            SELECT * EXCLUDE (rn) REPLACE ({spec['replace']})
+            SELECT * EXCLUDE (rn) REPLACE ({replace_clause})
             FROM numbered
         """
 
@@ -356,7 +372,7 @@ def inject_fault(
         """
     )
     con.execute(f"SET VARIABLE geopackage_path = '{_sql_literal(sandbox_path.resolve().as_posix())}'")
-    return fault, spec["qcs"]
+    return fault, list(spec["qcs"])
 
 
 def list_qcs(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
@@ -387,6 +403,8 @@ def run_qcs(con: duckdb.DuckDBPyConnection, codes: list[str] | None = None) -> t
         meta = con.execute(
             "SELECT error_level, description FROM qc.qc_definitions WHERE code = ?", [code]
         ).fetchone()
+        if meta is None:
+            raise KeyError(f"QC {code} is not present in the catalog")
         try:
             result = run_qc(con, code)
             status = "PASSED" if result.empty else "FAILED"

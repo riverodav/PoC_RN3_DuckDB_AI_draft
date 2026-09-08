@@ -1,0 +1,20 @@
+{
+    "workbench.editorAssociations": {
+        "*.copilotmd": "vscode.markdown.preview.editor",
+        "*.parquet": "default",
+        "file:/**/*.parquet": "jupyter-data-wrangler",
+        "*.csv": "duckdb.dataFileViewer",
+        "*.tsv": "duckdb.dataFileViewer",
+        "*.xlsx": "duckdb.dataFileViewer"
+    },
+    "duckdb.databases": [
+        {
+            "alias": "wise_rbdsuca",
+            "type": "file",
+            "path": "c:\\Users\\drivero\\source\\repos\\PoC_RN3_DuckDB_AI\\wise_rbdsuca.duckdb",
+            "readOnly": true,
+            "attached": false
+        }
+    ],
+    "duckdb.defaultDatabase": "wise_rbdsuca"
+}

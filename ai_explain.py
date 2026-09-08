@@ -1,6 +1,6 @@
 """AI-assisted interpretation of Quality Check failures.
 
-Given a failed QC, this module builds a context (its description, the SQL that
+Given a failed QC, this module builds a context with its description, the SQL that
 implements it, and a sample of the offending records) and asks an LLM to explain,
 in plain language, what failed, why, and how to fix it. No separate knowledge
 base is maintained: the QC's own metadata and SQL (already the source of truth
@@ -18,7 +18,7 @@ plain OpenAI, Azure OpenAI, GitHub Models, or a local Ollama model:
 | `ollama` | none - runs fully offline against a local Ollama server; optional `OLLAMA_BASE_URL` (default `http://localhost:11434/v1`) and `AI_EXPLAIN_MODEL` (default `llama3.1`) |
 
 Data privacy: every provider except `ollama` sends the QC's SQL and a sample of the
-offending records (real reported data) to a third-party API. Use `ollama` if that data
+offending records, which are real reported data, to an external API. Use `ollama` if that data
 cannot leave the machine; a `UserWarning` is raised once per process for every other
 provider as a reminder.
 """
@@ -29,6 +29,7 @@ import os
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 import duckdb
 import pandas as pd
@@ -147,13 +148,21 @@ class QcContext:
     total_records: int
 
 
-def build_qc_context(con: duckdb.DuckDBPyConnection, code: str, result: pd.DataFrame) -> QcContext:
-    error_level, description = con.execute(
-        "SELECT error_level, description FROM qc.qc_definitions WHERE code = ?", [code]
+def build_qc_context(con: duckdb.DuckDBPyConnection,code: str,result: pd.DataFrame,) -> QcContext:
+    row = con.execute(
+        """
+        SELECT error_level, description, sql_text
+        FROM qc.qc_definitions
+        WHERE code = ?
+        """,
+        [code],
     ).fetchone()
-    sql_text = con.execute(
-        "SELECT sql_text FROM qc.qc_definitions WHERE code = ?", [code]
-    ).fetchone()[0]
+
+    if row is None:
+        raise LookupError(f"No QC definition found for code: {code}")
+
+    error_level, description, sql_text = row
+
     return QcContext(
         code=code,
         error_level=error_level,
@@ -172,12 +181,24 @@ def explain_qc(con: duckdb.DuckDBPyConnection, code: str, result: pd.DataFrame, 
     client, model = _client_and_model()
 
     if error_message:
-        error_level, description = con.execute(
-            "SELECT error_level, description FROM qc.qc_definitions WHERE code = ?", [code]
+        row = con.execute(
+            """
+            SELECT error_level, description, sql_text
+            FROM qc.qc_definitions
+            WHERE code = ?
+            """,
+            [code],
         ).fetchone()
-        sql_text = _truncate_sql(
-            con.execute("SELECT sql_text FROM qc.qc_definitions WHERE code = ?", [code]).fetchone()[0]
-        )
+
+        if row is None:
+            return (
+                f"### {code}\n\n"
+                f"Unable to explain this QC: no definition was found."
+            )
+
+        error_level, description, sql_text = row
+        sql_text = _truncate_sql(sql_text)
+
         user_prompt = f"""QC code: {code}
 Error level: {error_level}
 Description: {description}
@@ -236,12 +257,16 @@ def explain_failures(
     summary: pd.DataFrame,
     results: dict[str, pd.DataFrame],
     statuses: tuple[str, ...] = ("FAILED", "ERROR"),
+    codes: Iterable[str] | None = None,
 ) -> str:
     """Explain every QC in `summary` whose status is in `statuses`.
 
     `FAILED` QCs are explained from their offending records; `ERROR` QCs (the SQL itself
     raised an exception, e.g. a table not exported for this dataflow) are explained from
     the exception message in `summary`'s `message` column instead.
+
+    `codes`, if given, restricts the report to that subset of QC codes (e.g. a user's
+    selection from the notebook) instead of every failing/erroring QC.
 
     A QC whose LLM call itself fails (rate limit, timeout, provider outage) does not
     abort the rest of the report - its section just notes the failure instead.
@@ -250,8 +275,10 @@ def explain_failures(
     `IPython.display.Markdown` or written to a file.
     """
     rows = summary.loc[summary["status"].isin(statuses)]
+    if codes is not None:
+        rows = rows.loc[rows["code"].isin(codes)]
     if rows.empty:
-        return "All checked QCs passed - nothing to explain."
+        return "No matching QCs to explain." if codes is not None else "All checked QCs passed - nothing to explain."
 
     sections = []
     for _, row in rows.iterrows():
